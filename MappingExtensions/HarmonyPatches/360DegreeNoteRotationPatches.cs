@@ -132,7 +132,8 @@ namespace MappingExtensions.HarmonyPatches
     {
         private static void Postfix(ref int __result, int index)
         {
-            if (BS_Utils.Plugin.LevelData.IsSet && !BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData.beatmapKey.beatmapCharacteristic.requires360Movement)
+            if (BS_Utils.Plugin.LevelData.IsSet &&
+                BS_Utils.Plugin.LevelData.GameplayCoreSceneSetupData.beatmapKey.characteristic != BeatmapCharacteristic.Degree360)
             {
                 return;
             }
