@@ -65,11 +65,20 @@ namespace MappingExtensions.HarmonyPatches
         // TODO: Make this less compiler-generated garbage.
         private static void Postfix(BeatmapObjectsInTimeRowProcessor.TimeSliceContainer<BeatmapDataItem> allObjectsTimeSlice)
         {
-            IEnumerable<NoteData> enumerable = allObjectsTimeSlice.items.OfType<NoteData>();
-            if (!enumerable.Any(x => x.lineIndex is > 3 or < 0))
+            bool hasExtraLanes = false;
+            foreach (BeatmapDataItem item in allObjectsTimeSlice.items)
+            {
+                if (item is NoteData note && note.lineIndex is > 3 or < 0)
+                {
+                    hasExtraLanes = true;
+                    break;
+                }
+            }
+            if (!hasExtraLanes)
             {
                 return;
             }
+            IEnumerable<NoteData> enumerable = allObjectsTimeSlice.items.OfType<NoteData>();
             IEnumerable<SliderData> enumerable2 = allObjectsTimeSlice.items.OfType<SliderData>();
             IEnumerable<BeatmapObjectsInTimeRowProcessor.SliderTailData> enumerable3 = allObjectsTimeSlice.items.OfType<BeatmapObjectsInTimeRowProcessor.SliderTailData>();
             Dictionary<int, List<NoteData>> notesInColumnsProcessingDictionaryOfLists = new Dictionary<int, List<NoteData>>();

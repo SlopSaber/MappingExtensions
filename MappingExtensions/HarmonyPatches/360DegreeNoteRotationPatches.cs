@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.Emit;
 using HarmonyLib;
 using SongCore.UI;
@@ -96,14 +95,15 @@ namespace MappingExtensions.HarmonyPatches
     {
         private static void Postfix(ref NoteCutDirection __result, BeatmapSaveDataCommon.NoteCutDirection noteCutDirection)
         {
-            // This happens in menu, so we can't rely on Plugin.Active.
-            if (RequirementsUI.instance.diffData == null || !RequirementsUI.instance.diffData.additionalDifficultyData._requirements.Any(r => r.StartsWith("Mapping Extensions", StringComparison.Ordinal)))
+            var direction = (int)noteCutDirection;
+            if (direction is not (>= 1000 and <= 1360 or >= 2000 and <= 2360))
             {
                 return;
             }
 
-            var direction = (int)noteCutDirection;
-            if (direction is >= 1000 and <= 1360 or >= 2000 and <= 2360)
+            // This happens in menu, so we can't rely on Plugin.Active.
+            var diffData = RequirementsUI.instance.diffData;
+            if (diffData != null && Plugin.HasMappingExtensionsRequirement(diffData.additionalDifficultyData._requirements))
             {
                 __result = (NoteCutDirection)direction;
             }
