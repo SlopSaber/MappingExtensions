@@ -17,9 +17,9 @@ namespace MappingExtensions.HarmonyPatches
         private const int MaxWallHeight = 4000;
         internal const int MaxEncodedType = StartHeightMarker + MaxWallHeight * PrecisionUnit + MaxStartHeight;
 
-        private const int PrecisionLayerMarker = PrecisionUnit;
-        private const float LegacyFullWallHeightLineUnits = 5f;
-        private const float LegacyFullStartHeightValue = PrecisionUnit * 0.75f;
+        private const float WallHeightToGameHeightMultiplier = 5f;
+        private const int EncodedLayerGroundOffset = 1000;
+        private const float StartHeightToLayerDivisor = 750f;
 
         internal enum Mode
         {
@@ -65,7 +65,7 @@ namespace MappingExtensions.HarmonyPatches
 
         internal static int EncodeHeight(DecodedType decodedType)
         {
-            return EncodePrecision(decodedType.wallHeight / (float)PrecisionUnit * LegacyFullWallHeightLineUnits);
+            return (int)(decodedType.wallHeight / (float)PrecisionUnit * WallHeightToGameHeightMultiplier * PrecisionUnit + PrecisionHeightMarker);
         }
 
         internal static int EncodeLayer(DecodedType decodedType)
@@ -75,13 +75,9 @@ namespace MappingExtensions.HarmonyPatches
                 return 0;
             }
 
-            var layer = decodedType.startHeight / LegacyFullStartHeightValue * LegacyFullWallHeightLineUnits;
-            return (int)(layer * PrecisionUnit + PrecisionLayerMarker);
-        }
-
-        private static int EncodePrecision(float value)
-        {
-            return (int)(value * PrecisionUnit + PrecisionHeightMarker);
+            // Legacy ME v2 expands authored start height into the precision layer space used by wall art maps.
+            // An offset of 1000 keeps converted walls aligned to Beat Saber's 0.6m wall grid.
+            return (int)(decodedType.startHeight / StartHeightToLayerDivisor * WallHeightToGameHeightMultiplier * PrecisionUnit + EncodedLayerGroundOffset);
         }
     }
 
@@ -136,7 +132,6 @@ namespace MappingExtensions.HarmonyPatches
                 }))
                 .InstructionEnumeration();
         }
-
     }
 
     [HarmonyPatch(typeof(ObstacleController), nameof(ObstacleController.Init))]
@@ -166,13 +161,24 @@ namespace MappingExtensions.HarmonyPatches
                 return;
             }
 
-            var positiveLength = StretchableObstacleNegativeLengthPatch.GetNormalizedVisualLength(__instance._length);
-            __instance._length = positiveLength;
-            __instance._stretchableObstacle.SetSizeAndOffset(__instance._width, __instance._height, positiveLength, __instance.manualUvOffset);
-            if (obstacleData.duration < 0f)
+            if (obstacleData.duration < 0f && __instance._length < 0f)
             {
-                __instance._obstacleDuration = -obstacleData.duration;
+                var lengthPerBeat = __instance._length / obstacleData.duration;
+                if (lengthPerBeat <= Mathf.Epsilon)
+                {
+                    return;
+                }
+
+                var negativeWallLength = StretchableObstacleNegativeLengthPatch.GetNormalizedVisualLength(__instance._length);
+                __instance._length = negativeWallLength;
+                __instance._obstacleDuration = negativeWallLength / lengthPerBeat;
+                __instance._stretchableObstacle.SetSizeAndOffset(__instance._width, __instance._height, negativeWallLength, __instance.manualUvOffset);
+                return;
             }
+
+            var precisionWallLength = StretchableObstacleNegativeLengthPatch.GetNormalizedVisualLength(__instance._length);
+            __instance._length = precisionWallLength;
+            __instance._stretchableObstacle.SetSizeAndOffset(__instance._width, __instance._height, precisionWallLength, __instance.manualUvOffset);
         }
 
         private static bool ShouldNormalizeVisualLength(ObstacleData obstacleData, float length)
@@ -193,7 +199,8 @@ namespace MappingExtensions.HarmonyPatches
     [HarmonyPatch(typeof(StretchableObstacle), "CalculateObstacleTransformProperties")]
     internal static class StretchableObstacleNegativeLengthPatch
     {
-        internal const float NegativeWallVisualLength = 0.05f;
+        internal const float TinyPrecisionWallVisualLength = 0.05f;
+        private const float NegativeWallMinimumVisualLength = 35f;
 
         private static void Postfix(
             StretchableObstacle __instance,
@@ -217,7 +224,12 @@ namespace MappingExtensions.HarmonyPatches
 
         internal static float GetNormalizedVisualLength(float length)
         {
-            return length < 0f || length > NegativeWallVisualLength ? NegativeWallVisualLength : length;
+            if (length < 0f)
+            {
+                return Mathf.Max(-length, NegativeWallMinimumVisualLength);
+            }
+
+            return length > TinyPrecisionWallVisualLength ? TinyPrecisionWallVisualLength : length;
         }
     }
 

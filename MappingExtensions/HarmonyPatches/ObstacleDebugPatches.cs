@@ -1,3 +1,4 @@
+#if DEBUG
 using System;
 using HarmonyLib;
 using UnityEngine;
@@ -181,7 +182,7 @@ namespace MappingExtensions.HarmonyPatches
             ref Vector3 size,
             ref Vector3 scale)
         {
-            if (length < 0f || length <= StretchableObstacleNegativeLengthPatch.NegativeWallVisualLength)
+            if (length < 0f || length <= StretchableObstacleNegativeLengthPatch.TinyPrecisionWallVisualLength)
             {
                 ObstacleDebugPatches.Info($"CalculateObstacleTransformProperties width={width:F3}, height={height:F3}, length={length:F3}, localPosition={ObstacleDebugPatches.VectorString(localPosition)}, size={ObstacleDebugPatches.VectorString(size)}, scale={ObstacleDebugPatches.VectorString(scale)}");
             }
@@ -201,7 +202,7 @@ namespace MappingExtensions.HarmonyPatches
     {
         private static void Postfix(StretchableObstacle __instance, float width, float height, float length)
         {
-            if (length < 0f || length <= StretchableObstacleNegativeLengthPatch.NegativeWallVisualLength)
+            if (length < 0f || length <= StretchableObstacleNegativeLengthPatch.TinyPrecisionWallVisualLength)
             {
                 ObstacleDebugPatches.Info($"SetAllProperties name={__instance.name}, width={width:F3}, height={height:F3}, length={length:F3}, frameLength={__instance._obstacleFrame.length:F3}, framePos={ObstacleDebugPatches.VectorString(__instance._obstacleFrame.localPosition)}, glow={(__instance._obstacleFakeGlow == null ? "null" : __instance._obstacleFakeGlow.length.ToString("F3"))}");
             }
@@ -221,7 +222,7 @@ namespace MappingExtensions.HarmonyPatches
     {
         private static void Postfix(StretchableObstacle __instance, float width, float height, float length, float offset)
         {
-            if (length < 0f || length <= StretchableObstacleNegativeLengthPatch.NegativeWallVisualLength)
+            if (length < 0f || length <= StretchableObstacleNegativeLengthPatch.TinyPrecisionWallVisualLength)
             {
                 ObstacleDebugPatches.Info($"SetSizeAndOffset name={__instance.name}, width={width:F3}, height={height:F3}, length={length:F3}, offset={offset:F3}, frameLength={__instance._obstacleFrame.length:F3}, framePos={ObstacleDebugPatches.VectorString(__instance._obstacleFrame.localPosition)}, glow={(__instance._obstacleFakeGlow == null ? "null" : __instance._obstacleFakeGlow.length.ToString("F3"))}");
             }
@@ -236,3 +237,4 @@ namespace MappingExtensions.HarmonyPatches
         }
     }
 }
+#endif
