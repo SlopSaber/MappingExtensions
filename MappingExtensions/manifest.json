@@ -7,7 +7,7 @@
   "name": "MappingExtensions",
   "version": "1.7.7",
   "dependsOn": {
-    "BSIPA": "^4.3.0",
+    "BSIPA": "^5.0.0",
     "SongCore": "^3.15.1",
     "BS Utils": "^1.12.3"
   },
